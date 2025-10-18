@@ -1,0 +1,1 @@
+Basic password cracking solution
