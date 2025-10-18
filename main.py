@@ -5,12 +5,12 @@ from file_system.login_manager import LoginManager
 
 
 def ensure_files_exist():
-    """Ensure salt.txt and shadow.txt exist; create empty if missing"""
-    for filename in ("salt.txt", "shadow.txt"):
-        path = Path(filename)
-        if not path.exists():
-            path.write_text("", encoding="utf-8")
-            print(f"Created missing file: {filename}")
+    """Ensure shadow.txt exist; create empty if missing"""
+    filename = "shadow.txt"
+    path = Path(filename)
+    if not path.exists():
+        path.write_text("", encoding="utf-8")
+        print(f"Created missing file: {filename}")
 
 
 def display_menu():

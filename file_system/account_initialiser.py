@@ -1,19 +1,17 @@
 """User creation"""
 from file_system.utils import (
     account_exists,
-    validate_password,
-    generate_salt,
     hash_password,
-    write_salt,
-    write_shadow
+    write_shadow,
 )
+from file_system.password_strength import validate_password
 
 
 class AccountInitialiser:
-    """Manages the hash/salt/shadow based user/password creation system"""
+    """Manages the hash/shadow-based user/password creation system."""
 
     def run(self):
-        """Maintain control flow for creating a new user"""
+        """Maintain control flow for creating a new user."""
 
         # Ask for a valid username
         while True:
@@ -26,8 +24,10 @@ class AccountInitialiser:
         while True:
             input_password = input("Password: ").strip()
 
-            if not validate_password(input_password):
-                print("Password does not meet requirements. Please try again.")
+            # Validate password strength
+            valid, message = validate_password(input_username, input_password)
+            if not valid:
+                print(message)
                 continue
 
             confirmed_password = input("Confirm Password: ").strip()
@@ -37,14 +37,10 @@ class AccountInitialiser:
 
             break
 
-        # Generate salt
-        salt = generate_salt()
-
-        # Hash password + salt
-        hashed_pass = hash_password(input_password, salt)
+        # Hash password (Argon includes built-in salting)
+        hashed_pass = hash_password(input_password)
 
         # Update files
-        write_salt(input_username, salt)
         write_shadow(input_username, hashed_pass)
 
-        print(f"User {input_username} created successfully.")
+        print(f"User '{input_username}' created successfully.")
