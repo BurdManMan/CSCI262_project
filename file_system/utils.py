@@ -1,8 +1,9 @@
 """Hashing, validation, and file I/O"""
+from argon2 import PasswordHasher, exceptions as argon2_exceptions
 from pathlib import Path
 import random
 import hashlib
-
+ph = PasswordHasher(time_cost=2, memory_cost=65536, parallelism=4, hash_len=32)
 
 def account_exists(username: str) -> bool:
     """Check if the username already exists in the salt.txt file."""
@@ -57,12 +58,31 @@ def get_shadow(username: str) -> str | None:
     return None
 
 
-def hash_password(password: str, salt: str) -> str:
-    """Hash a password + salt using MD5 and return the hex digest."""
-    combined = password + salt
-    return hashlib.md5(combined.encode("utf-8")).hexdigest()
+def hash_password(password: str, salt: str = None) -> str:
+    """
+    Hash a password using Argon2 and return the encoded string.
+    Argon2 generates/embeds its own random salt inside the encoded hash. (So dont need to use salt.txt)
+    """
+    if isinstance(password, bytes):
+        password = password.decode("utf-8")
+    return ph.hash(password)
 
-
+def verify_password(stored_hash: str, password: str) -> bool:
+    """
+    Verify a plaintext password against an Argon2 encoded hash.
+    Returns True if it matches, False otherwise.
+    """
+    if not stored_hash:
+        return False
+    if isinstance(password, bytes):
+        password = password.decode("utf-8")
+    try:
+        return ph.verify(stored_hash, password)
+    except (argon2_exceptions.VerifyMismatchError, argon2_exceptions.InvalidHash):
+        return False
+    except Exception:
+        return False
+    
 def validate_password(password: str) -> bool:
     """
     Check if password meets complexity requirements:
