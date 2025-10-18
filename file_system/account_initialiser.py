@@ -1,4 +1,4 @@
-"""user creation"""
+"""User creation"""
 from file_system.utils import (
     account_exists,
     validate_password,
@@ -9,7 +9,7 @@ from file_system.utils import (
 )
 
 
-class AccountInitialiser():
+class AccountInitialiser:
     """Manages the hash/salt/shadow based user/password creation system"""
 
     def run(self):
@@ -37,15 +37,6 @@ class AccountInitialiser():
 
             break
 
-        # Get a valid clearance level
-        while True:
-            input_clearance = input(
-                "User clearance (0, 1, 2, or 3.): ").strip()
-            if input_clearance in {"0", "1", "2", "3"}:
-                clearance = int(input_clearance)
-                break
-            print("Invalid clearance level. Please enter 0, 1, 2, or 3.")
-
         # Generate salt
         salt = generate_salt()
 
@@ -53,8 +44,7 @@ class AccountInitialiser():
         hashed_pass = hash_password(input_password, salt)
 
         # Update files
-        write_salt(input_username, salt)  # placeholder
-        write_shadow(input_username, hashed_pass, clearance)  # placholder
+        write_salt(input_username, salt)
+        write_shadow(input_username, hashed_pass)
 
-        print(
-            f"User {input_username} created successfully with clearance {clearance}.")
+        print(f"User {input_username} created successfully.")

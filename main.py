@@ -1,9 +1,7 @@
 """Central module that manages control flow of file system helper functions"""
-import argparse
 from pathlib import Path
 from file_system.account_initialiser import AccountInitialiser
 from file_system.login_manager import LoginManager
-from file_system.utils import hash_password
 
 
 def ensure_files_exist():
@@ -11,43 +9,42 @@ def ensure_files_exist():
     for filename in ("salt.txt", "shadow.txt"):
         path = Path(filename)
         if not path.exists():
-            path.write_text("", encoding="utf-8")  # create an empty file
+            path.write_text("", encoding="utf-8")
             print(f"Created missing file: {filename}")
 
 
-def print_md5_test():
-    """outputs hash for test string"""
-    test_string = "This is a test"
-    md5_hash = hash_password(test_string, "")
-    print(f'MD5 ("{test_string}") = {md5_hash}')
+def display_menu():
+    """Display the command line menu and get user choice"""
+    print("\n=== Password Cracking Solution ===")
+    print("1. Account creation")
+    print("2. Log in and start file manipulation")
+    print("3. Exit")
+
+    while True:
+        choice = input("Select an option (1-3): ").strip()
+        if choice in {"1", "2", "3"}:
+            return choice
+        print("Invalid choice. Please enter 1, 2, or 3.")
 
 
 def main():
     """Control flow manager for top level of file system"""
-    # Print MD5 test
-    print_md5_test()
-
-    # Make sure required files exist
     ensure_files_exist()
 
-    parser = argparse.ArgumentParser(description="Simple FileSystem")
-    parser.add_argument(
-        "-i",
-        action="store_true",
-        help="Initialize the file system"
-    )
-    args = parser.parse_args()
+    while True:
+        choice = display_menu()
 
-    # if command line argument is -i start the initialisation process
-    if args.i:
-        account_initialiser = AccountInitialiser()
-        account_initialiser.run()
+        if choice == "1":
+            account_initialiser = AccountInitialiser()
+            account_initialiser.run()
 
-    # if there is no command line argument start login and file manipulation
-    # process
-    else:
-        log_in_manager = LoginManager()
-        log_in_manager.run()
+        elif choice == "2":
+            log_in_manager = LoginManager()
+            log_in_manager.run()
+
+        elif choice == "3":
+            print("Exiting program. Goodbye!")
+            break
 
 
 if __name__ == "__main__":
