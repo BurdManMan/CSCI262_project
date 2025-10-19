@@ -7,5 +7,5 @@ Windows:
 2. Navigate to virtual environment using the following command ".venv\Scripts\activate".
 3. Install required modules seen below using pip:
 
-- "pip install pyopt"
+- "pip install pyotp"
 - "pip install argon2-cffi"
