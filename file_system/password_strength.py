@@ -13,7 +13,7 @@ PASSWORD POLICIES
 import string
 
 # List of compromised passwords (in production, this would come from a proper database or API)
-COMPROMISED_PASSWORDS = {"Password123!", "12345678", "admin", "password"}
+COMPROMISED_PASSWORDS = {"password123!", "12345678", "admin", "password"}
 
 
 def is_printable(password: str) -> bool:

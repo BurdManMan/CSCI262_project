@@ -23,19 +23,6 @@ def account_exists(username: str) -> bool:
     return False
 
 
-def get_shadow(username: str) -> str | None:
-    """Look up a user's hashed password in shadow.txt."""
-    try:
-        with open("shadow.txt", "r", encoding="utf-8") as f:
-            for line in f:
-                parts = line.strip().split(":")
-                if len(parts) == 2 and parts[0] == username:
-                    return parts[1]
-    except FileNotFoundError:
-        print("shadow.txt not found.")
-    return None
-
-
 def hash_password(password: str) -> str:
     """
     Hash a password using Argon2 and return the encoded string.
@@ -58,29 +45,50 @@ def verify_password(stored_hash: str, password: str) -> bool:
         return False
 
 
-def validate_password(password: str) -> bool:
-    """Check if password meets complexity requirements."""
-    if len(password) < 8:
-        print("Password must be at least 8 characters long.")
-        return False
-    if not any(c.isupper() for c in password):
-        print("Password must contain at least one uppercase letter.")
-        return False
-    if not any(c.islower() for c in password):
-        print("Password must contain at least one lowercase letter.")
-        return False
-    if not any(c.isdigit() for c in password):
-        print("Password must contain at least one digit.")
-        return False
-    special_chars = "!@#$%^&*()"
-    if not any(c in special_chars for c in password):
-        print(
-            f"Password should contain at least one special character: {special_chars}")
-        return False
-    return True
+def write_shadow(username, hashed_password, mfa_secret=None):
+    """Write user credentials (username, hash, and optional MFA secret) to shadow.txt"""
+    with open("shadow.txt", "a", encoding="utf-8") as file:
+        if mfa_secret:
+            file.write(f"{username}:{hashed_password}:{mfa_secret}\n")
+        else:
+            file.write(f"{username}:{hashed_password}\n")
 
 
-def write_shadow(username: str, hashed_pass: str) -> None:
-    """Append a username and its hashed password to shadow.txt."""
-    with open("shadow.txt", "a", encoding="utf-8") as f:
-        f.write(f"{username}:{hashed_pass}\n")
+def get_shadow(username: str):
+    """
+    Read shadow.txt and return (stored_hash, mfa_secret_or_None) for username,
+    or None if not found.
+    Expected file lines:
+      username:hashed_password
+      username:hashed_password:mfa_secret
+    """
+    try:
+        with open("shadow.txt", "r", encoding="utf-8") as f:
+            for line in f:
+                parts = line.rstrip("\n").split(
+                    ":", 2)  # split into max 3 parts
+                if parts[0] != username:
+                    continue
+                if len(parts) == 3:
+                    return parts[1], parts[2]
+                elif len(parts) == 2:
+                    return parts[1], None
+                else:
+                    # malformed line
+                    return None
+    except FileNotFoundError:
+        return None
+
+
+def get_mfa_secret_from_shadow(username: str, path: str = "shadow.txt"):
+    p = Path(path)
+    if not p.exists():
+        return None
+    with p.open("r", encoding="utf-8") as f:
+        for line in f:
+            parts = line.rstrip("\n").split(":", 2)
+            if parts[0] == username:
+                if len(parts) >= 3:
+                    return parts[2]
+                return None
+    return None
