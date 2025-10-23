@@ -17,3 +17,13 @@ Linux:
 
 - "pip install pyotp"
 - "pip install argon2-cffi"
+
+
+=== Running Instructions ===
+Windows:
+1. To run main program use command "python main.py"
+2. To run authenticator demo use commmand "python demo_show_user_code.py"
+
+Linux:
+1. To run main program use command "python3 main.py"
+2. To run authenticator demo use commmand "python3 demo_show_user_code.py"
