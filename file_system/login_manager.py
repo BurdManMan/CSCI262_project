@@ -1,8 +1,14 @@
 """authentication with MFA"""
+import time
 import pyotp
 from file_system.file_system_manager import FileSystemManager
 from file_system.utils import verify_password, get_shadow
 
+
+# Lockout config
+_LOCKS = {}
+FAIL_THRESHOLD = 5
+LOCK_DURATION_SECONDS = 10 * 60
 
 class LoginManager:
     """Manages user authentication including optional MFA verification."""
@@ -20,6 +26,15 @@ class LoginManager:
         shadow_entry = get_shadow(username)
         if shadow_entry is None:
             print(f"User '{username}' not found. Login failed.")
+            return
+
+        # Lcockout check before password prompt
+        now = int(time.time())
+        fail_count, lock_until = _LOCKS.get(username, (0, 0))
+        if now < lock_until:
+            remaining = lock_until - now
+            mins, secs = divmod(remaining, 60)
+            print(f"Account temporarily locked. Try again in {mins}m {secs}s.")
             return
 
         # Normalize shadow_entry into (stored_hash, mfa_secret_or_None)
@@ -59,20 +74,38 @@ class LoginManager:
             print("No stored password hash found for that user. Login failed.")
             return
 
-        # Step 3: Password verification
+        # Step 4: Password verification
         password = input("Password: ").strip()
         if not password:
             print("No password entered. Login failed.")
             return
 
         print("Verifying password...")
-        if not verify_password(stored_hash, password):
-            print("Authentication failed. Incorrect password.")
+        try:
+            ok = verify_password(stored_hash, password)
+        except Exception:
+            print("Internal error during verification.")
+            ok = False
+
+        if not ok:
+            # Increment fail count
+            fail_count += 1
+            if fail_count >= FAIL_THRESHOLD:
+                lock_until = now + LOCK_DURATION_SECONDS
+                _LOCKS[username] = (0, lock_until)
+                print(f"Too many failed attempts. Account locked for {LOCK_DURATION_SECONDS // 60} minutes.")
+            else:
+                _LOCKS[username] = (fail_count, 0)
+                remaining_tries = FAIL_THRESHOLD - fail_count
+                print(f"Incorrect password. {remaining_tries} attempt(s) remaining before lockout.")
             return
 
+        # --- Password success: clear any lock state ---
+        if username in _LOCKS:
+            del _LOCKS[username]
         print(f"Password authentication for user '{username}' complete.")
 
-        # Step 4: MFA Verification (if configured)
+        # Step 5: MFA Verification (if configured)
         if mfa_secret:
             totp = pyotp.TOTP(mfa_secret)
             user_code = input("Enter your 6-digit MFA code: ").strip()
@@ -86,7 +119,7 @@ class LoginManager:
         else:
             print("No MFA secret found — skipping MFA verification (demo user).")
 
-        # Step 5: Hand control to file system
+        # Step 6: Hand control to file system
         print(f"Login successful. Welcome, {username}.")
         fs_manager = FileSystemManager(username)
         fs_manager.run()
